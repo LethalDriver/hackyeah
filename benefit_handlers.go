@@ -89,6 +89,62 @@ func addBenefit(c *gin.Context, repo *BenefitRepository) {
 	c.JSON(http.StatusCreated, savedBenefit)
 }
 
+func deleteBenefit(c *gin.Context, repo *BenefitRepository) {
+	ctx := c.Request.Context()
+	benefitIdString := c.Param("id")
+	benefitId, err := primitive.ObjectIDFromHex(benefitIdString)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	err = repo.DeleteBenefit(ctx, benefitId)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Benefit deleted successfully"})
+}
+
+func updateBenefit(c *gin.Context, repo *BenefitRepository) {
+	ctx := c.Request.Context()
+	benefitIdString := c.Param("id")
+	benefitId, err := primitive.ObjectIDFromHex(benefitIdString)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if _, err := repo.GetBenefitByID(ctx, benefitId); err != nil {
+		if err == ErrBenefitNotFound {
+			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	var updatedBenefit Benefit
+	if err := c.ShouldBindJSON(&updatedBenefit); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if updatedBenefit.Id != benefitId {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Benefit ID in URL does not match ID in request body"})
+		return
+	}
+
+	savedBenefit, err := repo.UpdateBenefit(ctx, &updatedBenefit)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, savedBenefit)
+}
+
 func getAllWallets(c *gin.Context, repo *WalletRepository) {
 	ctx := c.Request.Context()
 	wallets, err := repo.GetAllWallets(ctx)
