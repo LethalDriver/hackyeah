@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"log"
-	"payments-service/repository"
 
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -27,11 +26,11 @@ func main() {
 		log.Fatal(err)
 	}
 
-	benefitRepo, err := repository.NewBenefitRepository(client.Database(dbName).Collection("benefits"), client.Database(dbName).Collection("owned_benefits"))
+	benefitRepo, err := NewBenefitRepository(client.Database(dbName).Collection("benefits"), client.Database(dbName).Collection("owned_benefits"))
 	if err != nil {
 		log.Fatal(err)
 	}
-	walletRepo, err := repository.NewWalletRepository(client.Database(dbName).Collection("wallets"))
+	walletRepo, err := NewWalletRepository(client.Database(dbName).Collection("wallets"))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -57,6 +56,10 @@ func main() {
 
 	r.GET("/wallets", func(c *gin.Context) {
 		getAllWallets(c, walletRepo)
+	})
+
+	r.POST("/tokens/grant", func(c *gin.Context) {
+		grantTokens(c, walletRepo)
 	})
 
 	log.Println("Server running on port 8080")

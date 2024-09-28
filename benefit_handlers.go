@@ -2,14 +2,13 @@ package main
 
 import (
 	"net/http"
-	"payments-service/repository"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-func getAllBenefits(c *gin.Context, repo *repository.BenefitRepository) {
+func getAllBenefits(c *gin.Context, repo *BenefitRepository) {
 	ctx := c.Request.Context()
 	benefits, err := repo.GetAllBenefits(ctx)
 	if err != nil {
@@ -19,7 +18,7 @@ func getAllBenefits(c *gin.Context, repo *repository.BenefitRepository) {
 	c.JSON(http.StatusOK, benefits)
 }
 
-func getBenefit(c *gin.Context, repo *repository.BenefitRepository) {
+func getBenefit(c *gin.Context, repo *BenefitRepository) {
 	ctx := c.Request.Context()
 	benefitIdString := c.Param("id")
 	benefitId, err := primitive.ObjectIDFromHex(benefitIdString)
@@ -37,9 +36,9 @@ func getBenefit(c *gin.Context, repo *repository.BenefitRepository) {
 	c.JSON(http.StatusOK, benefit)
 }
 
-func addBenefit(c *gin.Context, repo *repository.BenefitRepository) {
+func addBenefit(c *gin.Context, repo *BenefitRepository) {
 	ctx := c.Request.Context()
-	var benefit repository.Benefit
+	var benefit Benefit
 	if err := c.ShouldBindJSON(&benefit); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -52,7 +51,7 @@ func addBenefit(c *gin.Context, repo *repository.BenefitRepository) {
 	c.JSON(http.StatusCreated, savedBenefit)
 }
 
-func getAllWallets(c *gin.Context, repo *repository.WalletRepository) {
+func getAllWallets(c *gin.Context, repo *WalletRepository) {
 	ctx := c.Request.Context()
 	wallets, err := repo.GetAllWallets(ctx)
 	if err != nil {
@@ -62,7 +61,7 @@ func getAllWallets(c *gin.Context, repo *repository.WalletRepository) {
 	c.JSON(http.StatusOK, wallets)
 }
 
-func buyBenefit(c *gin.Context, benefitRepo *repository.BenefitRepository, walletRepo *repository.WalletRepository) {
+func buyBenefit(c *gin.Context, benefitRepo *BenefitRepository, walletRepo *WalletRepository) {
 	ctx := c.Request.Context()
 	benefitIdString := c.Param("benefit_id")
 	benefitId, err := primitive.ObjectIDFromHex(benefitIdString)
@@ -104,7 +103,7 @@ func buyBenefit(c *gin.Context, benefitRepo *repository.BenefitRepository, walle
 		return
 	}
 
-	ownedBenefit := repository.OwnedBenefit{
+	ownedBenefit := OwnedBenefit{
 		OwnerId:        req.UserID,
 		BenefitId:      benefitId,
 		Purchased:      time.Now(),
@@ -117,4 +116,32 @@ func buyBenefit(c *gin.Context, benefitRepo *repository.BenefitRepository, walle
 	}
 
 	c.JSON(http.StatusOK, savedOwnedBenefit)
+}
+
+func grantTokens(c *gin.Context, repo *WalletRepository) {
+	ctx := c.Request.Context()
+	var req struct {
+		UserID primitive.ObjectID `json:"user_id"`
+		Amount float64            `json:"amount"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	wallet, err := repo.GetWalletByUserID(ctx, req.UserID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	wallet.TokenBalance += req.Amount
+	_, err = repo.UpdateWallet(ctx, wallet)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, wallet)
 }
