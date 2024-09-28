@@ -40,7 +40,7 @@ func main() {
 
 	// Define your routes here
 	r.GET("/benefits", func(c *gin.Context) {
-		getAllBenefits(c, benefitRepo)
+		getBenefits(c, benefitRepo)
 	})
 	r.POST("/benefits", func(c *gin.Context) {
 		addBenefit(c, benefitRepo)

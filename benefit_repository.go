@@ -89,6 +89,26 @@ func (r *BenefitRepository) DeleteBenefit(ctx context.Context, id primitive.Obje
 	return nil
 }
 
+func (r *BenefitRepository) GetFilteredBenefits(ctx context.Context, filter bson.M) ([]Benefit, error) {
+	cursor, err := r.benefitCollection.Find(ctx, filter)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var benefits []Benefit
+	for cursor.Next(ctx) {
+		var benefit Benefit
+		err := cursor.Decode(&benefit)
+		if err != nil {
+			return nil, err
+		}
+		benefits = append(benefits, benefit)
+	}
+
+	return benefits, nil
+}
+
 func (r *BenefitRepository) GetOwnedBenefits(ctx context.Context, userID primitive.ObjectID) ([]OwnedBenefit, error) {
 	cursor, err := r.purchasedBenefitCollection.Find(ctx, bson.M{"owner_id": userID})
 	if err != nil {

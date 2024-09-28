@@ -8,10 +8,10 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-type Category int
+type BenefitCategory int
 
 const (
-	Transport Category = iota
+	Transport BenefitCategory = iota
 	Health
 	Entertainment
 	Culture
@@ -20,7 +20,7 @@ const (
 type Benefit struct {
 	Id             primitive.ObjectID `json:"id" bson:"_id,omitempty"`
 	Name           string             `json:"name" bson:"name"`
-	Category       Category           `json:"category" bson:"category"`
+	Category       BenefitCategory           `json:"category" bson:"category"`
 	Description    string             `json:"description" bson:"description"`
 	ImageUrl       string             `json:"imageUrl" bson:"imageUrl"`
 	Price          float64            `json:"price" bson:"price"`
@@ -38,12 +38,12 @@ type OwnedBenefit struct {
 }
 
 // String values for the enum
-func (c Category) String() string {
+func (c BenefitCategory) String() string {
 	return [...]string{"Transport", "Health", "Entertainment", "Culture"}[c]
 }
 
 // UnmarshalJSON customizes the unmarshalling of the Category field from JSON.
-func (c *Category) UnmarshalJSON(data []byte) error {
+func (c *BenefitCategory) UnmarshalJSON(data []byte) error {
 	var str string
 	if err := json.Unmarshal(data, &str); err != nil {
 		return err
@@ -65,6 +65,6 @@ func (c *Category) UnmarshalJSON(data []byte) error {
 }
 
 // Implement MarshalJSON for custom JSON serialization
-func (c Category) MarshalJSON() ([]byte, error) {
+func (c BenefitCategory) MarshalJSON() ([]byte, error) {
 	return json.Marshal(c.String())
 }

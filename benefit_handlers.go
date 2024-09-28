@@ -2,19 +2,55 @@ package main
 
 import (
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-func getAllBenefits(c *gin.Context, repo *BenefitRepository) {
+func getBenefits(c *gin.Context, repo *BenefitRepository) {
 	ctx := c.Request.Context()
-	benefits, err := repo.GetAllBenefits(ctx)
+
+	// Get query parameters
+	category := c.Query("category")
+	minPrice := c.Query("min_price")
+	maxPrice := c.Query("max_price")
+	search := c.Query("search")
+
+	// Prepare filter options
+	filter := bson.M{}
+	if category != "" {
+		filter["category"] = category
+	}
+	if minPrice != "" {
+		minPriceFloat, err := strconv.ParseFloat(minPrice, 64)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid min_price"})
+			return
+		}
+		filter["price"] = bson.M{"$gte": minPriceFloat}
+	}
+	if maxPrice != "" {
+		maxPriceFloat, err := strconv.ParseFloat(maxPrice, 64)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid max_price"})
+			return
+		}
+		filter["price"] = bson.M{"$lte": maxPriceFloat}
+	}
+	if search != "" {
+		filter["name"] = bson.M{"$regex": search, "$options": "i"}
+	}
+
+	// Get benefits based on filter
+	benefits, err := repo.GetFilteredBenefits(ctx, filter)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+
 	c.JSON(http.StatusOK, benefits)
 }
 
