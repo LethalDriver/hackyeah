@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"errors"
+	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -10,6 +11,26 @@ import (
 )
 
 var ErrBenefitNotFound = errors.New("benefit not found")
+
+type Benefit struct {
+	Id             primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	Name           string             `json:"name" bson:"name"`
+	Category       string             `json:"category" bson:"category"` // Changed to string
+	Description    string             `json:"description" bson:"description"`
+	ImageUrl       string             `json:"imageUrl" bson:"imageUrl"`
+	Price          float64            `json:"price" bson:"price"`
+	InStock        int                `json:"inStock" bson:"inStock"`
+	ExpirationDate time.Time          `json:"expirationDate" bson:"expirationDate"`
+}
+
+type OwnedBenefit struct {
+	Id             primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	OwnerId        primitive.ObjectID `json:"ownerId" bson:"ownerId"`
+	BenefitId      primitive.ObjectID `json:"benefitId" bson:"benefitId"`
+	Purchased      time.Time          `json:"purchased" bson:"purchased"`
+	Content        string             `json:"content" bson:"content"`
+	ExpirationDate time.Time          `json:"expirationDate" bson:"expirationDate"`
+}
 
 type BenefitRepository struct {
 	benefitCollection          *mongo.Collection

@@ -22,7 +22,9 @@ func getBenefits(c *gin.Context, repo *BenefitRepository) {
 	// Prepare filter options
 	filter := bson.M{}
 	if category != "" {
-		filter["category"] = category
+		if category != "" {
+			filter["category"] = bson.M{"$regex": category, "$options": "i"}
+		}
 	}
 	if minPrice != "" {
 		minPriceFloat, err := strconv.ParseFloat(minPrice, 64)
