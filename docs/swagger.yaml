@@ -1,0 +1,343 @@
+definitions:
+  main.Benefit:
+    properties:
+      category:
+        description: Changed to string
+        type: string
+      description:
+        type: string
+      expirationDate:
+        type: string
+      id:
+        type: string
+      imageUrl:
+        type: string
+      inStock:
+        type: integer
+      name:
+        type: string
+      price:
+        type: integer
+    type: object
+  main.ErrorResponse:
+    properties:
+      error:
+        type: string
+    type: object
+  main.OwnedBenefit:
+    properties:
+      benefitId:
+        type: string
+      content:
+        type: string
+      expirationDate:
+        type: string
+      id:
+        type: string
+      ownerId:
+        type: string
+      purchased:
+        type: string
+    type: object
+  main.Wallet:
+    properties:
+      id:
+        type: string
+      money_balance:
+        type: number
+      token_balance:
+        type: integer
+      user_id:
+        type: string
+    type: object
+info:
+  contact: {}
+paths:
+  /benefits:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves benefits based on query parameters
+      parameters:
+      - description: Category of the benefit
+        in: query
+        name: category
+        type: string
+      - description: Minimum price of the benefit
+        in: query
+        name: min_price
+        type: string
+      - description: Maximum price of the benefit
+        in: query
+        name: max_price
+        type: string
+      - description: Search term
+        in: query
+        name: search
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of benefits
+          schema:
+            items:
+              $ref: '#/definitions/main.Benefit'
+            type: array
+        "400":
+          description: Invalid query parameters
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+      summary: Get benefits
+      tags:
+      - benefits
+    post:
+      consumes:
+      - application/json
+      description: Adds a new benefit to the database
+      parameters:
+      - description: Benefit to add
+        in: body
+        name: benefit
+        required: true
+        schema:
+          $ref: '#/definitions/main.Benefit'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Benefit created
+          schema:
+            $ref: '#/definitions/main.Benefit'
+        "400":
+          description: Invalid benefit format
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+      summary: Add a new benefit
+      tags:
+      - benefits
+  /benefits/{benefit_id}/buy:
+    post:
+      consumes:
+      - application/json
+      description: Buys a benefit for a user, deducting from their wallet
+      parameters:
+      - description: Benefit ID
+        in: path
+        name: benefit_id
+        required: true
+        type: string
+      - description: User ID
+        in: body
+        name: user_id
+        required: true
+        schema:
+          type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Purchased benefit
+          schema:
+            $ref: '#/definitions/main.OwnedBenefit'
+        "400":
+          description: Invalid ID format or insufficient funds
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+      summary: Buy a benefit
+      tags:
+      - benefits
+  /benefits/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Deletes a benefit by its ID
+      parameters:
+      - description: Benefit ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Benefit deleted successfully
+          schema:
+            type: object
+        "400":
+          description: Invalid ID format
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+      summary: Delete a benefit
+      tags:
+      - benefits
+    get:
+      consumes:
+      - application/json
+      description: Retrieves a single benefit by its ID
+      parameters:
+      - description: Benefit ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Single benefit
+          schema:
+            $ref: '#/definitions/main.Benefit'
+        "400":
+          description: Invalid ID format
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "404":
+          description: Benefit not found
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+      summary: Get a single benefit
+      tags:
+      - benefits
+    put:
+      consumes:
+      - application/json
+      description: Updates a benefit by its ID
+      parameters:
+      - description: Benefit ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Updated benefit information
+        in: body
+        name: benefit
+        required: true
+        schema:
+          $ref: '#/definitions/main.Benefit'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Benefit updated successfully
+          schema:
+            $ref: '#/definitions/main.Benefit'
+        "400":
+          description: Invalid ID or benefit format
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "404":
+          description: Benefit not found
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+      summary: Update a benefit
+      tags:
+      - benefits
+  /wallets:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves all wallets
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of wallets
+          schema:
+            items:
+              $ref: '#/definitions/main.Wallet'
+            type: array
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+      summary: Get all wallets
+      tags:
+      - wallets
+  /wallets/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves a wallet by the user's ID
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User's wallet
+          schema:
+            $ref: '#/definitions/main.Wallet'
+        "400":
+          description: Invalid ID format
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+      summary: Get wallet by user ID
+      tags:
+      - wallets
+  /wallets/grant:
+    post:
+      consumes:
+      - application/json
+      description: Grants tokens to a user's wallet
+      parameters:
+      - description: User ID
+        in: body
+        name: user_id
+        required: true
+        schema:
+          type: string
+      - description: Amount of tokens to grant
+        in: body
+        name: amount
+        required: true
+        schema:
+          type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Updated wallet
+          schema:
+            $ref: '#/definitions/main.Wallet'
+        "400":
+          description: Invalid request format
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+      summary: Grant tokens to a wallet
+      tags:
+      - wallets
+swagger: "2.0"

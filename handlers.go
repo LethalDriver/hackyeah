@@ -12,6 +12,23 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
+type ErrorResponse struct {
+	Error string `json:"error"`
+}
+
+// @Summary Get benefits
+// @Description Retrieves benefits based on query parameters
+// @Tags benefits
+// @Accept json
+// @Produce json
+// @Param category query string false "Category of the benefit"
+// @Param min_price query string false "Minimum price of the benefit"
+// @Param max_price query string false "Maximum price of the benefit"
+// @Param search query string false "Search term"
+// @Success 200 {array} Benefit "List of benefits"
+// @Failure 400 {object} ErrorResponse "Invalid query parameters"
+// @Failure 500 {object} ErrorResponse "Internal server error"
+// @Router /benefits [get]
 func getBenefits(c *gin.Context, repo *BenefitRepository) {
 	ctx := c.Request.Context()
 
@@ -58,6 +75,16 @@ func getBenefits(c *gin.Context, repo *BenefitRepository) {
 	c.JSON(http.StatusOK, benefits)
 }
 
+// @Summary Get a single benefit
+// @Description Retrieves a single benefit by its ID
+// @Tags benefits
+// @Accept json
+// @Produce json
+// @Param id path string true "Benefit ID"
+// @Success 200 {object} Benefit "Single benefit"
+// @Failure 400 {object} ErrorResponse "Invalid ID format"
+// @Failure 404 {object} ErrorResponse "Benefit not found"
+// @Router /benefits/{id} [get]
 func getBenefit(c *gin.Context, repo *BenefitRepository) {
 	ctx := c.Request.Context()
 	benefitIdString := c.Param("id")
@@ -76,6 +103,16 @@ func getBenefit(c *gin.Context, repo *BenefitRepository) {
 	c.JSON(http.StatusOK, benefit)
 }
 
+// @Summary Add a new benefit
+// @Description Adds a new benefit to the database
+// @Tags benefits
+// @Accept json
+// @Produce json
+// @Param benefit body Benefit true "Benefit to add"
+// @Success 201 {object} Benefit "Benefit created"
+// @Failure 400 {object} ErrorResponse "Invalid benefit format"
+// @Failure 500 {object} ErrorResponse "Internal server error"
+// @Router /benefits [post]
 func addBenefit(c *gin.Context, repo *BenefitRepository) {
 	ctx := c.Request.Context()
 	var benefit Benefit
@@ -91,6 +128,16 @@ func addBenefit(c *gin.Context, repo *BenefitRepository) {
 	c.JSON(http.StatusCreated, savedBenefit)
 }
 
+// @Summary Delete a benefit
+// @Description Deletes a benefit by its ID
+// @Tags benefits
+// @Accept json
+// @Produce json
+// @Param id path string true "Benefit ID"
+// @Success 200 {object} object "Benefit deleted successfully"
+// @Failure 400 {object} ErrorResponse "Invalid ID format"
+// @Failure 500 {object} ErrorResponse "Internal server error"
+// @Router /benefits/{id} [delete]
 func deleteBenefit(c *gin.Context, repo *BenefitRepository) {
 	ctx := c.Request.Context()
 	benefitIdString := c.Param("id")
@@ -109,6 +156,18 @@ func deleteBenefit(c *gin.Context, repo *BenefitRepository) {
 	c.JSON(http.StatusOK, gin.H{"message": "Benefit deleted successfully"})
 }
 
+// @Summary Update a benefit
+// @Description Updates a benefit by its ID
+// @Tags benefits
+// @Accept json
+// @Produce json
+// @Param id path string true "Benefit ID"
+// @Param benefit body Benefit true "Updated benefit information"
+// @Success 200 {object} Benefit "Benefit updated successfully"
+// @Failure 400 {object} ErrorResponse "Invalid ID or benefit format"
+// @Failure 404 {object} ErrorResponse "Benefit not found"
+// @Failure 500 {object} ErrorResponse "Internal server error"
+// @Router /benefits/{id} [put]
 func updateBenefit(c *gin.Context, repo *BenefitRepository) {
 	ctx := c.Request.Context()
 	benefitIdString := c.Param("id")
@@ -147,6 +206,14 @@ func updateBenefit(c *gin.Context, repo *BenefitRepository) {
 	c.JSON(http.StatusOK, savedBenefit)
 }
 
+// @Summary Get all wallets
+// @Description Retrieves all wallets
+// @Tags wallets
+// @Accept json
+// @Produce json
+// @Success 200 {array} Wallet "List of wallets"
+// @Failure 500 {object} ErrorResponse "Internal server error"
+// @Router /wallets [get]
 func getAllWallets(c *gin.Context, repo *WalletRepository) {
 	ctx := c.Request.Context()
 	wallets, err := repo.GetAllWallets(ctx)
@@ -157,6 +224,17 @@ func getAllWallets(c *gin.Context, repo *WalletRepository) {
 	c.JSON(http.StatusOK, wallets)
 }
 
+// @Summary Buy a benefit
+// @Description Buys a benefit for a user, deducting from their wallet
+// @Tags benefits
+// @Accept json
+// @Produce json
+// @Param benefit_id path string true "Benefit ID"
+// @Param user_id body string true "User ID"
+// @Success 200 {object} OwnedBenefit "Purchased benefit"
+// @Failure 400 {object} ErrorResponse "Invalid ID format or insufficient funds"
+// @Failure 500 {object} ErrorResponse "Internal server error"
+// @Router /benefits/{benefit_id}/buy [post]
 func buyBenefit(c *gin.Context, benefitRepo *BenefitRepository, walletRepo *WalletRepository) {
 	// Start a session
 	session, err := benefitRepo.client.StartSession()
@@ -233,6 +311,17 @@ func buyBenefit(c *gin.Context, benefitRepo *BenefitRepository, walletRepo *Wall
 	c.JSON(http.StatusOK, result)
 }
 
+// @Summary Grant tokens to a wallet
+// @Description Grants tokens to a user's wallet
+// @Tags wallets
+// @Accept json
+// @Produce json
+// @Param user_id body string true "User ID"
+// @Param amount body int true "Amount of tokens to grant"
+// @Success 200 {object} Wallet "Updated wallet"
+// @Failure 400 {object} ErrorResponse "Invalid request format"
+// @Failure 500 {object} ErrorResponse "Internal server error"
+// @Router /wallets/grant [post]
 func grantTokens(c *gin.Context, repo *WalletRepository) {
 	ctx := c.Request.Context()
 	var req struct {
@@ -261,6 +350,16 @@ func grantTokens(c *gin.Context, repo *WalletRepository) {
 	c.JSON(http.StatusOK, wallet)
 }
 
+// @Summary Get wallet by user ID
+// @Description Retrieves a wallet by the user's ID
+// @Tags wallets
+// @Accept json
+// @Produce json
+// @Param id path string true "User ID"
+// @Success 200 {object} Wallet "User's wallet"
+// @Failure 400 {object} ErrorResponse "Invalid ID format"
+// @Failure 500 {object} ErrorResponse "Internal server error"
+// @Router /wallets/{id} [get]
 func getWalletByUserID(c *gin.Context, repo *WalletRepository) {
 	ctx := c.Request.Context()
 	userId := c.Param("id")

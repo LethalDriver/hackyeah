@@ -4,7 +4,11 @@ import (
 	"context"
 	"log"
 
+	_ "payments-service/docs"
+
 	"github.com/gin-gonic/gin"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -37,6 +41,8 @@ func main() {
 
 	// Create a new Gin router
 	r := gin.Default()
+
+	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	// Define your routes here
 	r.GET("/benefits", func(c *gin.Context) {
