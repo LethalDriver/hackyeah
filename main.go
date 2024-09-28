@@ -49,6 +49,12 @@ func main() {
 	r.GET("/benefits/:id", func(c *gin.Context) {
 		getBenefit(c, benefitRepo)
 	})
+	r.PUT("/benefits/:id", func(c *gin.Context) {
+		updateBenefit(c, benefitRepo)
+	})
+	r.DELETE("/benefits/:id", func(c *gin.Context) {
+		deleteBenefit(c, benefitRepo)
+	})
 
 	r.POST("/benefits/:benefit_id/buy", func(c *gin.Context) {
 		buyBenefit(c, benefitRepo, walletRepo)
@@ -57,7 +63,6 @@ func main() {
 	r.GET("/wallets", func(c *gin.Context) {
 		getAllWallets(c, walletRepo)
 	})
-
 	r.POST("/tokens/grant", func(c *gin.Context) {
 		grantTokens(c, walletRepo)
 	})
