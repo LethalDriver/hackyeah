@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"net/http"
 	"strconv"
 	"time"
@@ -8,6 +9,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 func getBenefits(c *gin.Context, repo *BenefitRepository) {
@@ -156,9 +158,16 @@ func getAllWallets(c *gin.Context, repo *WalletRepository) {
 }
 
 func buyBenefit(c *gin.Context, benefitRepo *BenefitRepository, walletRepo *WalletRepository) {
-	ctx := c.Request.Context()
-	benefitIdString := c.Param("benefit_id")
-	benefitId, err := primitive.ObjectIDFromHex(benefitIdString)
+	// Start a session
+	session, err := benefitRepo.client.StartSession()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to start session"})
+		return
+	}
+	defer session.EndSession(c.Request.Context())
+
+	benefitId := c.Param("benefit_id")
+	benefitObjectId, err := primitive.ObjectIDFromHex(benefitId)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -167,56 +176,68 @@ func buyBenefit(c *gin.Context, benefitRepo *BenefitRepository, walletRepo *Wall
 	var req struct {
 		UserID primitive.ObjectID `json:"user_id"`
 	}
-
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	benefit, err := benefitRepo.GetBenefitByID(ctx, benefitId)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
+	// Define the transaction
+	transaction := func(sessCtx mongo.SessionContext) (any, error) {
+		// Perform all the steps inside the transaction
+
+		// Step 1: Get Benefit by ID
+		benefit, err := benefitRepo.GetBenefitByID(sessCtx, benefitObjectId)
+		if err != nil {
+			return nil, err
+		}
+
+		// Step 2: Get Wallet by User ID
+		wallet, err := walletRepo.GetWalletByUserID(sessCtx, req.UserID)
+		if err != nil {
+			return nil, err
+		}
+
+		// Step 3: Check and update wallet balance
+		if wallet.TokenBalance < benefit.Price {
+			return nil, errors.New("insufficient funds")
+		}
+		wallet.TokenBalance -= benefit.Price
+		_, err = walletRepo.UpdateWallet(sessCtx, wallet)
+		if err != nil {
+			return nil, err
+		}
+
+		// Step 4: Add purchased benefit
+		ownedBenefit := OwnedBenefit{
+			OwnerId:        req.UserID,
+			BenefitId:      benefitObjectId,
+			Purchased:      time.Now(),
+			Content:        "TODO",
+			ExpirationDate: benefit.ExpirationDate,
+		}
+		savedOwnedBenefit, err := benefitRepo.AddPurchasedBenefit(sessCtx, &ownedBenefit)
+		if err != nil {
+			return nil, err
+		}
+
+		return savedOwnedBenefit, nil
 	}
 
-	wallet, err := walletRepo.GetWalletByUserID(ctx, req.UserID)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	if wallet.TokenBalance < benefit.Price {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "insufficient funds"})
-		return
-	}
-
-	wallet.TokenBalance -= benefit.Price
-	_, err = walletRepo.UpdateWallet(ctx, wallet)
+	// Execute the transaction
+	result, err := session.WithTransaction(c.Request.Context(), transaction)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	ownedBenefit := OwnedBenefit{
-		OwnerId:        req.UserID,
-		BenefitId:      benefitId,
-		Purchased:      time.Now(),
-		Content:        "TODO",
-		ExpirationDate: benefit.ExpirationDate,
-	}
-	savedOwnedBenefit, err := benefitRepo.AddPurchasedBenefit(ctx, &ownedBenefit)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-	}
-
-	c.JSON(http.StatusOK, savedOwnedBenefit)
+	c.JSON(http.StatusOK, result)
 }
 
 func grantTokens(c *gin.Context, repo *WalletRepository) {
 	ctx := c.Request.Context()
 	var req struct {
 		UserID primitive.ObjectID `json:"user_id"`
-		Amount float64            `json:"amount"`
+		Amount int                `json:"amount"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -232,6 +253,24 @@ func grantTokens(c *gin.Context, repo *WalletRepository) {
 
 	wallet.TokenBalance += req.Amount
 	_, err = repo.UpdateWallet(ctx, wallet)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, wallet)
+}
+
+func getWalletByUserID(c *gin.Context, repo *WalletRepository) {
+	ctx := c.Request.Context()
+	userId := c.Param("id")
+	userIdObject, err := primitive.ObjectIDFromHex(userId)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	wallet, err := repo.GetWalletByUserID(ctx, userIdObject)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

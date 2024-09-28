@@ -18,7 +18,7 @@ type Benefit struct {
 	Category       string             `json:"category" bson:"category"` // Changed to string
 	Description    string             `json:"description" bson:"description"`
 	ImageUrl       string             `json:"imageUrl" bson:"imageUrl"`
-	Price          float64            `json:"price" bson:"price"`
+	Price          int                `json:"price" bson:"price"`
 	InStock        int                `json:"inStock" bson:"inStock"`
 	ExpirationDate time.Time          `json:"expirationDate" bson:"expirationDate"`
 }
@@ -33,12 +33,14 @@ type OwnedBenefit struct {
 }
 
 type BenefitRepository struct {
+	client                     *mongo.Client
 	benefitCollection          *mongo.Collection
 	purchasedBenefitCollection *mongo.Collection
 }
 
-func NewBenefitRepository(benefitCollection *mongo.Collection, purchasedBenefitCollection *mongo.Collection) (*BenefitRepository, error) {
+func NewBenefitRepository(client *mongo.Client, benefitCollection *mongo.Collection, purchasedBenefitCollection *mongo.Collection) (*BenefitRepository, error) {
 	return &BenefitRepository{
+		client:                     client,
 		benefitCollection:          benefitCollection,
 		purchasedBenefitCollection: purchasedBenefitCollection,
 	}, nil

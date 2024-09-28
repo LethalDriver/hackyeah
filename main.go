@@ -26,7 +26,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	benefitRepo, err := NewBenefitRepository(client.Database(dbName).Collection("benefits"), client.Database(dbName).Collection("owned_benefits"))
+	benefitRepo, err := NewBenefitRepository(client, client.Database(dbName).Collection("benefits"), client.Database(dbName).Collection("owned_benefits"))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -59,9 +59,11 @@ func main() {
 	r.POST("/benefits/:benefit_id/buy", func(c *gin.Context) {
 		buyBenefit(c, benefitRepo, walletRepo)
 	})
-
 	r.GET("/wallets", func(c *gin.Context) {
 		getAllWallets(c, walletRepo)
+	})
+	r.GET("/wallets/:id", func(c *gin.Context) {
+		getWalletByUserID(c, walletRepo)
 	})
 	r.POST("/tokens/grant", func(c *gin.Context) {
 		grantTokens(c, walletRepo)

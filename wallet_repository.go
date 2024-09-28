@@ -15,7 +15,7 @@ type Wallet struct {
 	Id           primitive.ObjectID `json:"id" bson:"_id,omitempty"`
 	UserId       primitive.ObjectID `json:"user_id" bson:"user_id"`
 	MoneyBalance float64            `json:"money_balance" bson:"money_balance"`
-	TokenBalance float64            `json:"token_balance" bson:"token_balance"`
+	TokenBalance int            `json:"token_balance" bson:"token_balance"`
 }
 
 type WalletRepository struct {
