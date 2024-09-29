@@ -3,10 +3,10 @@ package main
 import (
 	"context"
 	"log"
-	"os"
 
 	_ "payments-service/docs"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
@@ -16,8 +16,7 @@ import (
 
 func main() {
 	// Set up MongoDB client options
-	mongoUri := os.Getenv("MONGO_URI")
-	clientOptions := options.Client().ApplyURI(mongoUri)
+	clientOptions := options.Client().ApplyURI("mongodb+srv://cityboost-services:uG6G2K8evz@hackyeah-db.3xvq7.mongodb.net/?retryWrites=true&w=majority&appName=hackyeah-db")
 	dbName := "hackyeahdb"
 
 	// Connect to MongoDB
@@ -43,6 +42,8 @@ func main() {
 
 	// Create a new Gin router
 	r := gin.Default()
+
+	r.Use(cors.Default())
 
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
