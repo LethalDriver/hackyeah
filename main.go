@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"log"
+	"os"
 
 	_ "payments-service/docs"
 
@@ -15,7 +16,8 @@ import (
 
 func main() {
 	// Set up MongoDB client options
-	clientOptions := options.Client().ApplyURI("mongodb+srv://fastapi:123fastapi@hackyeah-db.3xvq7.mongodb.net/?retryWrites=true&w=majority&appName=hackyeah-db")
+	mongoUri := os.Getenv("MONGO_URI")
+	clientOptions := options.Client().ApplyURI(mongoUri)
 	dbName := "hackyeahdb"
 
 	// Connect to MongoDB
